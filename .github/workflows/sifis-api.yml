@@ -1,4 +1,4 @@
-name: sifis
+name: sifis-api
 
 on:
   push:

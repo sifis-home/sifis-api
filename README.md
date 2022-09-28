@@ -1,10 +1,10 @@
 # [![LICENSE](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Build Status](https://github.com/sifis-home/sifis-rust/workflows/sifis/badge.svg)](https://github.com/sifis-home/sifis-rust/actions)
+[![Build Status](https://github.com/sifis-home/sifis-api/workflows/sifis/badge.svg)](https://github.com/sifis-home/sifis-api/actions)
 [![Crates.io](https://img.shields.io/crates/v/sifis.svg)](https://crates.io/crates/sifis)
-[![dependency status](https://deps.rs/repo/github/sifis-home/sifis-rust/status.svg)](https://deps.rs/repo/github/sifis-home/sifis-rust)
+[![dependency status](https://deps.rs/repo/github/sifis-home/sifis-api/status.svg)](https://deps.rs/repo/github/sifis-home/sifis-api)
 [![Documentation](https://docs.rs/sifis/badge.svg)](https://docs.rs/sifis/)
 
-Helper crate to build [SIFIS-Home](https://sifis-home.eu) compatible servients.
+[SIFIS-Home](https://sifis-home.eu) third-party API.
 
 ## Acknowledgements
 

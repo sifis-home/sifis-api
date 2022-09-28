@@ -1,11 +1,11 @@
 [package]
-name = "sifis"
+name = "sifis-api"
 version = "0.0.0"
 edition = "2021"
-description = "SIFIS-Home Web of Things (WoT) Servients"
+description = "SIFIS-Home Third-party API"
 license = "MIT"
 repository = "https://github.com/sifis-home/sifis-rust"
-keywords = ["wot", "WebofThings"]
+keywords = ["SIFIS-Home"]
 
 [dependencies]
 

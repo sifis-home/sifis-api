@@ -1,7 +1,7 @@
 use tarpc::client::RpcError;
 use tarpc::tokio_serde::formats::Bincode;
 
-mod service {
+pub mod service {
     #[derive(Debug, thiserror::Error, serde::Serialize, serde::Deserialize)]
     pub enum Error {
         #[error("Operation forbidden")]

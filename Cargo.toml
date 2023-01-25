@@ -7,10 +7,19 @@ license = "MIT"
 repository = "https://github.com/sifis-home/sifis-rust"
 keywords = ["SIFIS-Home"]
 
+[features]
+runtime = ["dep:tracing-subscriber", "tokio/rt-multi-thread"]
+
 [dependencies]
 tarpc = { version = "0.31.0", features = ["serde-transport", "unix", "serde-transport-bincode"] }
 tokio = { version = "1.0", features = ["macros"] }
 futures = "0.3"
 thiserror = "1.0.38"
 serde = { version = "1.0.152", features = ["serde_derive"] }
+tracing = "0.1.37"
+# runtime-only
+tracing-subscriber = { version = "0.3.16", optional = true }
 
+[[bin]]
+name = "sifis-runtime-mock"
+required-features = ["runtime"]

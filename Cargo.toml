@@ -8,4 +8,9 @@ repository = "https://github.com/sifis-home/sifis-rust"
 keywords = ["SIFIS-Home"]
 
 [dependencies]
+tarpc = { version = "0.31.0", features = ["serde-transport", "unix", "serde-transport-bincode"] }
+tokio = { version = "1.0", features = ["macros"] }
+futures = "0.3"
+thiserror = "1.0.38"
+serde = { version = "1.0.152", features = ["serde_derive"] }
 

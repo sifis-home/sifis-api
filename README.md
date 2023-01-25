@@ -6,6 +6,13 @@
 
 [SIFIS-Home](https://sifis-home.eu) third-party API.
 
+**NOTE**: This repo history will be rewritten to be fully descriptive.
+
+## Supported Devices
+
+- [ ] Lamp
+- [ ] Sink
+
 ## Acknowledgements
 
 This software has been developed in the scope of the H2020 project SIFIS-Home with GA n. 952652.

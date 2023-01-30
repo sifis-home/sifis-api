@@ -4,6 +4,10 @@ use tarpc::tokio_serde::formats::Bincode;
 pub mod service {
     #[derive(Debug, thiserror::Error, serde::Serialize, serde::Deserialize)]
     pub enum Error {
+        #[error("Device of kind {found} found {req} requested")]
+        Mismatch { found: String, req: String },
+        #[error("Device {0} not found")]
+        NotFound(String),
         #[error("Operation forbidden")]
         Forbidden(String),
     }

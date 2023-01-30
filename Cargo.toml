@@ -8,6 +8,7 @@ repository = "https://github.com/sifis-home/sifis-rust"
 keywords = ["SIFIS-Home"]
 
 [features]
+default = ["runtime"]
 runtime = ["dep:tracing-subscriber", "tokio/rt-multi-thread"]
 
 [dependencies]

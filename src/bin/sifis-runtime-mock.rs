@@ -3,22 +3,24 @@
 //! It simulates a number of devices
 
 use futures::{future, prelude::*};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tarpc::context::Context;
 use tarpc::server::{self, Channel};
 use tarpc::tokio_serde::formats::Bincode;
+use tokio::fs::read_to_string;
 use tokio::sync::Mutex;
 
 use sifis_api::service::*;
 
-#[derive(Clone, Debug)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 struct LampState {
     brightness: u8,
     on: bool,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 struct SinkState {
     flow: u8,
     temp: u8,
@@ -26,7 +28,7 @@ struct SinkState {
     drain: bool,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 enum DeviceKind {
     Lamp(LampState),
     Sink(SinkState),
@@ -41,10 +43,15 @@ impl DeviceKind {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 struct Device {
     name: String,
     kind: DeviceKind,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct SifisConf {
+    devices: HashMap<String, Device>,
 }
 
 #[derive(Clone, Debug)]
@@ -128,6 +135,7 @@ impl SifisApi for SifisMock {
     // Lamp-specific API
     async fn turn_lamp_on(self, _: Context, id: String) -> Result<bool, Error> {
         self.apply_lamp(&id, |l| {
+            tracing::info!("Setting lamp {id} on property to true from {}", l.on);
             l.on = true;
             Ok(true)
         })
@@ -135,6 +143,7 @@ impl SifisApi for SifisMock {
     }
     async fn turn_lamp_off(self, _: Context, id: String) -> Result<bool, Error> {
         self.apply_lamp(&id, |l| {
+            tracing::info!("Setting lamp {id} on property to false from {}", l.on);
             l.on = false;
             Ok(false)
         })
@@ -147,6 +156,10 @@ impl SifisApi for SifisMock {
         brightness: u8,
     ) -> Result<u8, Error> {
         self.apply_lamp(&id, |l: &mut LampState| {
+            tracing::info!(
+                "Setting lamp {id} brightness to {brightness} from {}",
+                l.brightness,
+            );
             l.brightness = brightness;
             Ok(brightness)
         })
@@ -197,14 +210,46 @@ impl SifisApi for SifisMock {
     }
 }
 
+async fn load_conf() -> SifisConf {
+    if let Ok(conf_s) = read_to_string("sifis-runtime.toml").await {
+        toml::from_str(&conf_s).expect("Failed to load configuration")
+    } else {
+        tracing::warn!("Cannot find a configuration file, using the default");
+        let mut devices = HashMap::new();
+        devices.insert(
+            "lamp1".to_owned(),
+            Device {
+                name: "Safe lamp".to_owned(),
+                kind: DeviceKind::Lamp(LampState::default()),
+            },
+        );
+        devices.insert(
+            "lamp2".to_owned(),
+            Device {
+                name: "Unsafe lamp".to_owned(),
+                kind: DeviceKind::Lamp(LampState::default()),
+            },
+        );
+        devices.insert(
+            "sink 1".to_owned(),
+            Device {
+                name: "Kitchen Sink".to_owned(),
+                kind: DeviceKind::Sink(SinkState::default()),
+            },
+        );
+
+        SifisConf { devices }
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let path = "/var/run/sifis.sock";
+    tracing_subscriber::fmt::init();
+    let path = std::env::var("SIFIS_SERVER").unwrap_or("/var/run/sifis.sock".to_string());
     let listener = tarpc::serde_transport::unix::listen(path, Bincode::default).await?;
-    let devices = HashMap::new();
-    // TODO populate
 
-    let devices = Arc::new(Mutex::new(devices));
+    let conf = load_conf().await;
+    let devices = Arc::new(Mutex::new(conf.devices));
 
     listener
         .filter_map(|r| future::ready(r.ok()))

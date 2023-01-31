@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use tarpc::client::RpcError;
 use tarpc::tokio_serde::formats::Bincode;
 
@@ -43,6 +45,8 @@ pub enum Error {
     Rpc(#[from] RpcError),
     #[error("I/O error")]
     Io(#[from] std::io::Error),
+    #[error("Device not found")]
+    NotFound,
 }
 
 type Result<T> = std::result::Result<T, Error>;
@@ -63,6 +67,25 @@ impl Sifis {
         Ok(Sifis { client })
     }
 
+    pub async fn lamp(&self, lamp_id: &str) -> Result<Lamp> {
+        self.client
+            .find_lamps(tarpc::context::current())
+            .await?
+            .map(|lamps| {
+                lamps.into_iter().find_map(|id| {
+                    if lamp_id == &id {
+                        Some(Lamp {
+                            client: &self.client,
+                            id,
+                        })
+                    } else {
+                        None
+                    }
+                })
+            })?
+            .ok_or_else(|| Error::NotFound)
+    }
+
     pub async fn lamps(&self) -> Result<Vec<Lamp>> {
         let r = self
             .client
@@ -78,6 +101,25 @@ impl Sifis {
                     .collect()
             })?;
         Ok(r)
+    }
+
+    pub async fn sink(&self, sink_id: &str) -> Result<Sink> {
+        self.client
+            .find_sinks(tarpc::context::current())
+            .await?
+            .map(|sinks| {
+                sinks.into_iter().find_map(|id| {
+                    if sink_id == &id {
+                        Some(Sink {
+                            client: &self.client,
+                            id,
+                        })
+                    } else {
+                        None
+                    }
+                })
+            })?
+            .ok_or_else(|| Error::NotFound)
     }
 
     pub async fn sinks(&self) -> Result<Vec<Sink>> {
@@ -100,7 +142,13 @@ impl Sifis {
 
 pub struct Lamp<'a> {
     client: &'a SifisApiClient,
-    id: String,
+    pub id: String,
+}
+
+impl Display for Lamp<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Lamp - {}", self.id)
+    }
 }
 
 impl<'a> Lamp<'a> {
@@ -136,7 +184,13 @@ impl<'a> Lamp<'a> {
 
 pub struct Sink<'a> {
     client: &'a SifisApiClient,
-    id: String,
+    pub id: String,
+}
+
+impl Display for Sink<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Sink - {}", self.id)
+    }
 }
 
 impl<'a> Sink<'a> {

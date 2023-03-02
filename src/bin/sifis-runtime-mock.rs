@@ -149,6 +149,9 @@ impl SifisApi for SifisMock {
         })
         .await
     }
+    async fn get_lamp_on_off(self, _: Context, id: String) -> Result<bool, Error> {
+        self.apply_lamp(&id, |l| Ok(l.on)).await
+    }
     async fn set_lamp_brightness(
         self,
         _: Context,

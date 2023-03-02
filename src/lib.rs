@@ -20,6 +20,7 @@ pub mod service {
         async fn find_lamps() -> Result<Vec<String>, Error>;
         async fn turn_lamp_on(id: String) -> Result<bool, Error>;
         async fn turn_lamp_off(id: String) -> Result<bool, Error>;
+        async fn get_lamp_on_off(id: String) -> Result<bool, Error>;
         async fn set_lamp_brightness(id: String, brightness: u8) -> Result<u8, Error>;
         async fn get_lamp_brightness(id: String) -> Result<u8, Error>;
 
@@ -163,6 +164,13 @@ impl<'a> Lamp<'a> {
         let r = self
             .client
             .turn_lamp_off(tarpc::context::current(), self.id.clone())
+            .await??;
+        Ok(r)
+    }
+    pub async fn get_on_off(&self) -> Result<bool> {
+        let r = self
+            .client
+            .get_lamp_on_off(tarpc::context::current(), self.id.clone())
             .await??;
         Ok(r)
     }

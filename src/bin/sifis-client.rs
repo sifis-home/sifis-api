@@ -21,8 +21,15 @@ struct Ctx {
 async fn list_lamps(_args: ArgMatches, context: &mut Ctx) -> Result<Option<String>> {
     let mut out = String::new();
 
+    writeln!(out, "{:<15} {:<7} {:<5}", "Lamp id", "Status", "Brightness").unwrap();
     for lamp in context.sifis.lamps().await? {
-        writeln!(out, " {}", lamp).unwrap();
+        let on_off = if lamp.get_on_off().await? {
+            "On"
+        } else {
+            "Off"
+        };
+        let brightness = lamp.get_brightness().await?;
+        writeln!(out, "{:<15} {:<7} {:<5} ", lamp.id, on_off, brightness).unwrap();
     }
 
     Ok(Some(out))

@@ -4,7 +4,7 @@
 [![dependency status](https://deps.rs/repo/github/sifis-home/sifis-api/status.svg)](https://deps.rs/repo/github/sifis-home/sifis-api)
 [![Documentation](https://docs.rs/sifis/badge.svg)](https://docs.rs/sifis/)
 
-[SIFIS-Home](https://sifis-home.eu) third-party API.
+[SIFIS-Home](https://sifis-home.eu) developer API.
 
 **NOTE**: This repo history will be rewritten to be fully descriptive.
 

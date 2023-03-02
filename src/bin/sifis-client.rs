@@ -82,19 +82,19 @@ async fn main() -> Result<()> {
         |args, context| Box::pin(list_lamps(args, context)),
     )
     .with_command_async(
-        Command::new("light_on")
+        Command::new("turn_light_on")
             .arg(Arg::new("id").required(true))
             .about("Turn the lamp on."),
         |args, context| Box::pin(light_on(args, context)),
     )
     .with_command_async(
-        Command::new("light_off")
+        Command::new("turn_light_off")
             .arg(Arg::new("id").required(true))
             .about("Turn the lamp off."),
         |args, context| Box::pin(light_off(args, context)),
     )
     .with_command_async(
-        Command::new("brightness")
+        Command::new("set_lamp_brightness")
             .arg(Arg::new("id").required(true))
             .arg(
                 Arg::new("brightness")

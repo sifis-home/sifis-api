@@ -68,7 +68,7 @@ async fn main() -> Result<()> {
     let mut repl = Repl::new(Ctx {
         sifis: Sifis::new().await?,
     })
-    .with_name("Sifis Third Party API REPL")
+    .with_name("Sifis developer API REPL")
     .with_version("v0.1.0")
     .with_command_async(
         Command::new("list_lamps").about("List the available lamps"),

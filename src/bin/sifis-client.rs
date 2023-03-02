@@ -97,6 +97,7 @@ async fn main() -> Result<()> {
             .about("Set the lamp brightness"),
         |args, context| Box::pin(brightness(args, context)),
     )
+    .with_stop_on_ctrl_c(true)
     .with_on_after_command_async(|context| Box::pin(update_prompt(context)));
     repl.run_async().await?;
 

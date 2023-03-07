@@ -3,7 +3,21 @@ use std::fmt::Display;
 use tarpc::client::RpcError;
 use tarpc::tokio_serde::formats::Bincode;
 
+/// Hazard descriptions
+pub enum Hazard {
+    /// The execution may cause fire.
+    Fire,
+    /// Information about energy consumption may be leaked.
+    LogEnergyConsumption,
+    /// The energy consumption may increase.
+    EnergyConsumption,
+    /// The execution may cause power outage.
+    PowerOutage,
+}
+
 pub mod service {
+    use super::Hazard;
+
     #[derive(Debug, thiserror::Error, serde::Serialize, serde::Deserialize)]
     pub enum Error {
         #[error("Device of kind {found} found {req} requested")]
@@ -18,10 +32,28 @@ pub mod service {
     pub trait SifisApi {
         // Lamp-specific API
         async fn find_lamps() -> Result<Vec<String>, Error>;
+        /// Turns a light on.
+        ///
+        /// # Hazards
+        /// * [Hazard::Fire]
+        /// * [Hazard::LogEnergyConsumption]
+        /// * [Hazard::EnergyConsumption]
         async fn turn_lamp_on(id: String) -> Result<bool, Error>;
+        /// Turns a light off.
+        ///
+        /// # Hazards
+        /// * [Hazard::LogEnergyConsumption]
         async fn turn_lamp_off(id: String) -> Result<bool, Error>;
+        /// Get the current on/off status for a light
         async fn get_lamp_on_off(id: String) -> Result<bool, Error>;
+        /// Change the brightness.
+        ///
+        /// # Hazards
+        /// * [Hazard::Fire]
+        /// * [Hazard::LogEnergyConsumption]
+        /// * [Hazard::EnergyConsumption]
         async fn set_lamp_brightness(id: String, brightness: u8) -> Result<u8, Error>;
+        /// Get the current brightness level.
         async fn get_lamp_brightness(id: String) -> Result<u8, Error>;
 
         // Sink-specific API

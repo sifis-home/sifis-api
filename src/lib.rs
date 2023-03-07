@@ -3,7 +3,26 @@ use std::fmt::Display;
 use tarpc::client::RpcError;
 use tarpc::tokio_serde::formats::Bincode;
 
+// TODO: Use generate-sifis-hazards
+/// Hazard descriptions
+pub enum Hazard {
+    /// The execution may cause fire.
+    Fire,
+    /// Information about energy consumption may be leaked.
+    LogEnergyConsumption,
+    /// The energy consumption may increase.
+    EnergyConsumption,
+    /// The execution may cause power outage.
+    PowerOutage,
+    /// Water can overflow and flood the building
+    Flood,
+    /// Might boil water or heat up a surface
+    Scald,
+}
+
 pub mod service {
+    use super::Hazard;
+
     #[derive(Debug, thiserror::Error, serde::Serialize, serde::Deserialize)]
     pub enum Error {
         #[error("Device of kind {found} found {req} requested")]
@@ -18,20 +37,56 @@ pub mod service {
     pub trait SifisApi {
         // Lamp-specific API
         async fn find_lamps() -> Result<Vec<String>, Error>;
+        /// Turns a light on.
+        ///
+        /// # Hazards
+        /// * [Hazard::Fire]
+        /// * [Hazard::LogEnergyConsumption]
+        /// * [Hazard::EnergyConsumption]
         async fn turn_lamp_on(id: String) -> Result<bool, Error>;
+        /// Turns a light off.
+        ///
+        /// # Hazards
+        /// * [Hazard::LogEnergyConsumption]
         async fn turn_lamp_off(id: String) -> Result<bool, Error>;
+        /// Get the current on/off status for a light
         async fn get_lamp_on_off(id: String) -> Result<bool, Error>;
+        /// Change the brightness.
+        ///
+        /// # Hazards
+        /// * [Hazard::Fire]
+        /// * [Hazard::LogEnergyConsumption]
+        /// * [Hazard::EnergyConsumption]
         async fn set_lamp_brightness(id: String, brightness: u8) -> Result<u8, Error>;
+        /// Get the current brightness level.
         async fn get_lamp_brightness(id: String) -> Result<u8, Error>;
 
         // Sink-specific API
         async fn find_sinks() -> Result<Vec<String>, Error>;
+        /// Change the water flow
+        ///
+        /// # Hazards
+        /// * [Hazard::Flood]
         async fn set_sink_flow(id: String, flow: u8) -> Result<u8, Error>;
+        /// Get the current water flow status
         async fn get_sink_flow(id: String) -> Result<u8, Error>;
+        /// Set the sink the temperature
+        ///
+        /// # Hazard
+        /// * [Hazard::Scald]
         async fn set_sink_temp(id: String, temp: u8) -> Result<u8, Error>;
+        /// Get the current water temperature
         async fn get_sink_temp(id: String) -> Result<u8, Error>;
+        /// Close the drain
+        ///
+        /// # Hazard
+        /// * [Hazard::Flood]
         async fn close_sink_drain(id: String) -> Result<bool, Error>;
+        /// Open the drain
+        ///
+        /// # Hazard
         async fn open_sink_drain(id: String) -> Result<bool, Error>;
+        /// Get the water level in the sink
         async fn get_sink_level(id: String) -> Result<u8, Error>;
     }
 }

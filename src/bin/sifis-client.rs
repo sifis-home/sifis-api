@@ -43,7 +43,7 @@ async fn update_prompt(_context: &mut Ctx) -> Result<Option<String>> {
 async fn light_on(args: ArgMatches, context: &mut Ctx) -> Result<Option<String>> {
     let id = args.get_one::<String>("id").unwrap();
 
-    context.sifis.lamp(&id).await?.turn_on().await?;
+    context.sifis.lamp(id).await?.turn_on().await?;
 
     Ok(None)
 }
@@ -51,7 +51,7 @@ async fn light_on(args: ArgMatches, context: &mut Ctx) -> Result<Option<String>>
 async fn light_off(args: ArgMatches, context: &mut Ctx) -> Result<Option<String>> {
     let id = args.get_one::<String>("id").unwrap();
 
-    context.sifis.lamp(&id).await?.turn_off().await?;
+    context.sifis.lamp(id).await?.turn_off().await?;
 
     Ok(None)
 }
@@ -62,7 +62,7 @@ async fn brightness(args: ArgMatches, context: &mut Ctx) -> Result<Option<String
 
     context
         .sifis
-        .lamp(&id)
+        .lamp(id)
         .await?
         .set_brightness(*brightness)
         .await?;

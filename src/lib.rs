@@ -129,7 +129,7 @@ impl Sifis {
             .await?
             .map(|lamps| {
                 lamps.into_iter().find_map(|id| {
-                    if lamp_id == &id {
+                    if lamp_id == id {
                         Some(Lamp {
                             client: &self.client,
                             id,
@@ -165,7 +165,7 @@ impl Sifis {
             .await?
             .map(|sinks| {
                 sinks.into_iter().find_map(|id| {
-                    if sink_id == &id {
+                    if sink_id == id {
                         Some(Sink {
                             client: &self.client,
                             id,

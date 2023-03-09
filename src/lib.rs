@@ -3,8 +3,9 @@ use std::fmt::Display;
 use tarpc::client::RpcError;
 use tarpc::tokio_serde::formats::Bincode;
 
-// TODO: Use generate-sifis-hazards
+// TODO: Use sifis-hazards
 /// Hazard descriptions
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub enum Hazard {
     /// The execution may cause fire.
     Fire,
@@ -20,6 +21,13 @@ pub enum Hazard {
     Scald,
 }
 
+impl Display for Hazard {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        write!(f, "{:?}", self)
+    }
+}
+
+/// Lower level rpc
 pub mod service {
     use super::Hazard;
 
@@ -29,8 +37,8 @@ pub mod service {
         Mismatch { found: String, req: String },
         #[error("Device {0} not found")]
         NotFound(String),
-        #[error("Operation forbidden")]
-        Forbidden(String),
+        #[error("Operation forbidden {risk}: {comment}")]
+        Forbidden { risk: Hazard, comment: String },
     }
 
     #[tarpc::service]
@@ -63,7 +71,7 @@ pub mod service {
 
         // Sink-specific API
         async fn find_sinks() -> Result<Vec<String>, Error>;
-        /// Change the water flow
+        /// Change the water flow.
         ///
         /// # Hazards
         /// * [Hazard::Flood]
@@ -75,24 +83,25 @@ pub mod service {
         /// # Hazard
         /// * [Hazard::Scald]
         async fn set_sink_temp(id: String, temp: u8) -> Result<u8, Error>;
-        /// Get the current water temperature
+        /// Get the current water temperature.
         async fn get_sink_temp(id: String) -> Result<u8, Error>;
         /// Close the drain
+        ///
+        /// let the water level in the sink rise.
         ///
         /// # Hazard
         /// * [Hazard::Flood]
         async fn close_sink_drain(id: String) -> Result<bool, Error>;
-        /// Open the drain
-        ///
-        /// # Hazard
+        /// Open the drain, emptying the sink.
         async fn open_sink_drain(id: String) -> Result<bool, Error>;
-        /// Get the water level in the sink
+        /// Get the water level in the sink.
         async fn get_sink_level(id: String) -> Result<u8, Error>;
     }
 }
 
 use service::SifisApiClient;
 
+/// Error type
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("Runtime error")]
@@ -107,6 +116,7 @@ pub enum Error {
 
 type Result<T> = std::result::Result<T, Error>;
 
+/// Sifis client entry point
 pub struct Sifis {
     client: SifisApiClient,
 }
@@ -123,6 +133,7 @@ impl Sifis {
         Ok(Sifis { client })
     }
 
+    /// Lookup for a Lamp with the specific id.
     pub async fn lamp(&self, lamp_id: &str) -> Result<Lamp> {
         self.client
             .find_lamps(tarpc::context::current())
@@ -142,6 +153,7 @@ impl Sifis {
             .ok_or_else(|| Error::NotFound)
     }
 
+    /// Provide a list of the currently available Lamps.
     pub async fn lamps(&self) -> Result<Vec<Lamp>> {
         let r = self
             .client
@@ -159,6 +171,7 @@ impl Sifis {
         Ok(r)
     }
 
+    /// Lookup for a Sink with the specific id.
     pub async fn sink(&self, sink_id: &str) -> Result<Sink> {
         self.client
             .find_sinks(tarpc::context::current())
@@ -178,6 +191,7 @@ impl Sifis {
             .ok_or_else(|| Error::NotFound)
     }
 
+    /// Provide a list of the currently available Sinks.
     pub async fn sinks(&self) -> Result<Vec<Sink>> {
         let r = self
             .client
@@ -196,6 +210,7 @@ impl Sifis {
     }
 }
 
+/// A connected Lamp
 pub struct Lamp<'a> {
     client: &'a SifisApiClient,
     pub id: String,
@@ -208,6 +223,12 @@ impl Display for Lamp<'_> {
 }
 
 impl<'a> Lamp<'a> {
+    /// Turn on the lamp
+    ///
+    /// # Hazards
+    /// * [Hazard::Fire]
+    /// * [Hazard::LogEnergyConsumption]
+    /// * [Hazard::EnergyConsumption]
     pub async fn turn_on(&self) -> Result<bool> {
         let r = self
             .client
@@ -215,6 +236,10 @@ impl<'a> Lamp<'a> {
             .await??;
         Ok(r)
     }
+    /// Turn off the lamp
+    ///
+    /// # Hazards
+    /// * [Hazard::LogEnergyConsumption]
     pub async fn turn_off(&self) -> Result<bool> {
         let r = self
             .client
@@ -222,6 +247,7 @@ impl<'a> Lamp<'a> {
             .await??;
         Ok(r)
     }
+    /// Get the current on/off status for a light
     pub async fn get_on_off(&self) -> Result<bool> {
         let r = self
             .client
@@ -229,6 +255,7 @@ impl<'a> Lamp<'a> {
             .await??;
         Ok(r)
     }
+    /// Get the current brightness level.
     pub async fn get_brightness(&self) -> Result<u8> {
         let r = self
             .client
@@ -236,6 +263,12 @@ impl<'a> Lamp<'a> {
             .await??;
         Ok(r)
     }
+    /// Change the brightness.
+    ///
+    /// # Hazards
+    /// * [Hazard::Fire]
+    /// * [Hazard::LogEnergyConsumption]
+    /// * [Hazard::EnergyConsumption]
     pub async fn set_brightness(&self, brightness: u8) -> Result<u8> {
         let r = self
             .client
@@ -245,6 +278,7 @@ impl<'a> Lamp<'a> {
     }
 }
 
+/// Connected water basin/sink
 pub struct Sink<'a> {
     client: &'a SifisApiClient,
     pub id: String,
@@ -257,6 +291,7 @@ impl Display for Sink<'_> {
 }
 
 impl<'a> Sink<'a> {
+    /// Open the drain, emptying the sink.
     pub async fn open_drain(&self) -> Result<bool> {
         let r = self
             .client
@@ -264,6 +299,12 @@ impl<'a> Sink<'a> {
             .await??;
         Ok(r)
     }
+    /// Close the drain
+    ///
+    /// let the water level in the sink rise.
+    ///
+    /// # Hazard
+    /// * [Hazard::Flood]
     pub async fn close_drain(&self) -> Result<bool> {
         let r = self
             .client
@@ -271,6 +312,7 @@ impl<'a> Sink<'a> {
             .await??;
         Ok(r)
     }
+    /// Get the water level in the sink.
     pub async fn get_water_level(&self) -> Result<u8> {
         let r = self
             .client
@@ -278,6 +320,10 @@ impl<'a> Sink<'a> {
             .await??;
         Ok(r)
     }
+    /// Change the water flow.
+    ///
+    /// # Hazards
+    /// * [Hazard::Flood]
     pub async fn set_flow(&self, brightness: u8) -> Result<u8> {
         let r = self
             .client
@@ -285,6 +331,7 @@ impl<'a> Sink<'a> {
             .await??;
         Ok(r)
     }
+    /// Get the current water flow status
     pub async fn get_flow(&self) -> Result<u8> {
         let r = self
             .client
@@ -292,6 +339,10 @@ impl<'a> Sink<'a> {
             .await??;
         Ok(r)
     }
+    /// Set the sink the temperature
+    ///
+    /// # Hazard
+    /// * [Hazard::Scald]
     pub async fn set_temperature(&self, brightness: u8) -> Result<u8> {
         let r = self
             .client
@@ -299,6 +350,7 @@ impl<'a> Sink<'a> {
             .await??;
         Ok(r)
     }
+    /// Get the current water temperature.
     pub async fn get_temperature(&self) -> Result<u8> {
         let r = self
             .client

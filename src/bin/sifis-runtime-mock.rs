@@ -20,12 +20,24 @@ struct LampState {
     on: bool,
 }
 
-#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 struct SinkState {
     flow: u8,
     temp: u8,
     level: u8,
     drain: bool,
+}
+
+impl Default for SinkState {
+    #[inline]
+    fn default() -> Self {
+        Self {
+            flow: 0,
+            temp: 20,
+            level: 0,
+            drain: true,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

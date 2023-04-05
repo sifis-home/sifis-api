@@ -70,6 +70,64 @@ async fn brightness(args: ArgMatches, context: &mut Ctx) -> Result<Option<String
     Ok(None)
 }
 
+async fn list_sinks(_args: ArgMatches, context: &mut Ctx) -> Result<Option<String>> {
+    let mut out = String::new();
+
+    writeln!(
+        out,
+        "{:<15} {:<4} {:<11} {:<11}",
+        "Sink id", "Flow", "Water level", "Temperature"
+    )
+    .unwrap();
+    for sink in context.sifis.sinks().await? {
+        let flow = sink.get_flow().await?;
+        let water_level = sink.get_water_level().await?;
+        let temperature = sink.get_temperature().await?;
+        writeln!(
+            out,
+            "{:<15} {flow:<4} {water_level:<11} {temperature:<11}",
+            sink.id
+        )
+        .unwrap();
+    }
+
+    Ok(Some(out))
+}
+
+async fn set_sink_flow(args: ArgMatches, context: &mut Ctx) -> Result<Option<String>> {
+    let id = args.get_one::<String>("id").unwrap();
+    let flow = args.get_one::<u8>("flow").unwrap();
+
+    context.sifis.sink(id).await?.set_flow(*flow).await?;
+
+    Ok(None)
+}
+
+async fn open_sink_drain(args: ArgMatches, context: &mut Ctx) -> Result<Option<String>> {
+    let id = args.get_one::<String>("id").unwrap();
+
+    context.sifis.sink(id).await?.open_drain().await?;
+
+    Ok(None)
+}
+
+async fn close_sink_drain(args: ArgMatches, context: &mut Ctx) -> Result<Option<String>> {
+    let id = args.get_one::<String>("id").unwrap();
+
+    context.sifis.sink(id).await?.close_drain().await?;
+
+    Ok(None)
+}
+
+async fn set_sink_temperature(args: ArgMatches, context: &mut Ctx) -> Result<Option<String>> {
+    let id = args.get_one::<String>("id").unwrap();
+    let flow = args.get_one::<u8>("temperature").unwrap();
+
+    context.sifis.sink(id).await?.set_temperature(*flow).await?;
+
+    Ok(None)
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let mut repl = Repl::new(Ctx {
@@ -103,6 +161,44 @@ async fn main() -> Result<()> {
             )
             .about("Set the lamp brightness"),
         |args, context| Box::pin(brightness(args, context)),
+    )
+    .with_command_async(
+        Command::new("list_sinks").about("List the available sinks"),
+        |args, context| Box::pin(list_sinks(args, context)),
+    )
+    .with_command_async(
+        Command::new("set_sink_flow")
+            .arg(Arg::new("id").required(true))
+            .arg(
+                Arg::new("flow")
+                    .value_parser(value_parser!(u8).range(0..=100))
+                    .required(true),
+            )
+            .about("Set the flow of the sink."),
+        |args, context| Box::pin(set_sink_flow(args, context)),
+    )
+    .with_command_async(
+        Command::new("close_sink_drain")
+            .arg(Arg::new("id").required(true))
+            .about("Close the drain of the sink."),
+        |args, context| Box::pin(close_sink_drain(args, context)),
+    )
+    .with_command_async(
+        Command::new("open_sink_drain")
+            .arg(Arg::new("id").required(true))
+            .about("Open the drain of the sink."),
+        |args, context| Box::pin(open_sink_drain(args, context)),
+    )
+    .with_command_async(
+        Command::new("set_sink_temperature")
+            .arg(Arg::new("id").required(true))
+            .arg(
+                Arg::new("temperature")
+                    .value_parser(value_parser!(u8).range(10..=80))
+                    .required(true),
+            )
+            .about("Set the sink temperature"),
+        |args, context| Box::pin(set_sink_temperature(args, context)),
     )
     .with_stop_on_ctrl_c(true)
     .with_on_after_command_async(|context| Box::pin(update_prompt(context)));

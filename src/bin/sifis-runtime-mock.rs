@@ -124,7 +124,7 @@ impl SifisApi for SifisMock {
             .await
             .iter()
             .filter_map(|(id, dev)| match dev.kind {
-                DeviceKind::Lamp { .. } => Some(id.clone()),
+                DeviceKind::Sink { .. } => Some(id.clone()),
                 _ => None,
             })
             .collect();

@@ -128,6 +128,40 @@ async fn set_sink_temperature(args: ArgMatches, context: &mut Ctx) -> Result<Opt
     Ok(None)
 }
 
+async fn list_doors(_args: ArgMatches, context: &mut Ctx) -> Result<Option<String>> {
+    let mut out = String::new();
+
+    writeln!(
+        out,
+        "{:<15} {:<5} {:<11}",
+        "Door id", "Open?", "Lock status"
+    )
+    .unwrap();
+    for door in context.sifis.doors().await? {
+        let is_open = door.is_open().await?;
+        let lock_status = door.lock_status().await?;
+        writeln!(out, "{:<15} {is_open:<5} {lock_status:<11}", door.id).unwrap();
+    }
+
+    Ok(Some(out))
+}
+
+async fn lock_door(args: ArgMatches, context: &mut Ctx) -> Result<Option<String>> {
+    let id = args.get_one::<String>("id").unwrap();
+
+    context.sifis.door(id).await?.lock().await?;
+
+    Ok(None)
+}
+
+async fn unlock_door(args: ArgMatches, context: &mut Ctx) -> Result<Option<String>> {
+    let id = args.get_one::<String>("id").unwrap();
+
+    context.sifis.door(id).await?.unlock().await?;
+
+    Ok(None)
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let mut repl = Repl::new(Ctx {
@@ -199,6 +233,22 @@ async fn main() -> Result<()> {
             )
             .about("Set the sink temperature"),
         |args, context| Box::pin(set_sink_temperature(args, context)),
+    )
+    .with_command_async(
+        Command::new("list_doors").about("List the available doors"),
+        |args, context| Box::pin(list_doors(args, context)),
+    )
+    .with_command_async(
+        Command::new("lock_door")
+            .arg(Arg::new("id").required(true))
+            .about("Lock the door"),
+        |args, context| Box::pin(lock_door(args, context)),
+    )
+    .with_command_async(
+        Command::new("unlock_door")
+            .arg(Arg::new("id").required(true))
+            .about("Unlock the door"),
+        |args, context| Box::pin(unlock_door(args, context)),
     )
     .with_stop_on_ctrl_c(true)
     .with_on_after_command_async(|context| Box::pin(update_prompt(context)));

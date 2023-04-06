@@ -12,7 +12,7 @@ use tarpc::tokio_serde::formats::Bincode;
 use tokio::fs::read_to_string;
 use tokio::sync::Mutex;
 
-use sifis_api::service::*;
+use sifis_api::{service::*, DoorLockStatus};
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 struct LampState {
@@ -40,10 +40,17 @@ impl Default for SinkState {
     }
 }
 
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+struct DoorState {
+    is_open: bool,
+    lock: DoorLockStatus,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 enum DeviceKind {
     Lamp(LampState),
     Sink(SinkState),
+    Door(DoorState),
 }
 
 impl DeviceKind {
@@ -51,6 +58,7 @@ impl DeviceKind {
         match self {
             DeviceKind::Lamp(_) => "Lamp",
             DeviceKind::Sink(_) => "Sink",
+            DeviceKind::Door(_) => "Door",
         }
     }
 }
@@ -106,6 +114,19 @@ impl SifisMock {
             _ => Err(Error::Mismatch {
                 found: d.kind.display().to_string(),
                 req: "Sink".to_string(),
+            }),
+        })
+        .await
+    }
+    async fn apply_door<F, R>(&self, id: &str, f: F) -> Result<R, Error>
+    where
+        F: FnOnce(&mut DoorState) -> Result<R, Error>,
+    {
+        self.apply(id, |d| match d.kind {
+            DeviceKind::Door(ref mut door) => f(door),
+            _ => Err(Error::Mismatch {
+                found: d.kind.display().to_string(),
+                req: "Door".to_string(),
             }),
         })
         .await
@@ -223,6 +244,58 @@ impl SifisApi for SifisMock {
     async fn get_sink_level(self, _: Context, id: String) -> Result<u8, Error> {
         self.apply_sink(&id, |s: &mut SinkState| Ok(s.level)).await
     }
+
+    async fn find_doors(self, _: Context) -> Result<Vec<String>, Error> {
+        let res = self
+            .devices
+            .lock()
+            .await
+            .iter()
+            .filter_map(|(id, dev)| match dev.kind {
+                DeviceKind::Door { .. } => Some(id.clone()),
+                _ => None,
+            })
+            .collect();
+
+        Ok(res)
+    }
+
+    async fn get_door_lock_status(self, _: Context, id: String) -> Result<DoorLockStatus, Error> {
+        self.apply_door(&id, |s: &mut DoorState| Ok(s.lock)).await
+    }
+
+    async fn get_door_open(self, _: Context, id: String) -> Result<bool, Error> {
+        self.apply_door(&id, |s: &mut DoorState| Ok(s.is_open))
+            .await
+    }
+
+    async fn lock_door(self, _: Context, id: String) -> Result<bool, Error> {
+        self.apply_door(&id, |s: &mut DoorState| {
+            Ok(match s.lock {
+                DoorLockStatus::Locked => true,
+                DoorLockStatus::Unlocked => {
+                    s.lock = DoorLockStatus::Locked;
+                    true
+                }
+                DoorLockStatus::Jammed => false,
+            })
+        })
+        .await
+    }
+
+    async fn unlock_door(self, _: Context, id: String) -> Result<bool, Error> {
+        self.apply_door(&id, |s: &mut DoorState| {
+            Ok(match s.lock {
+                DoorLockStatus::Unlocked => true,
+                DoorLockStatus::Locked => {
+                    s.lock = DoorLockStatus::Unlocked;
+                    true
+                }
+                DoorLockStatus::Jammed => false,
+            })
+        })
+        .await
+    }
 }
 
 async fn load_conf() -> SifisConf {
@@ -250,6 +323,13 @@ async fn load_conf() -> SifisConf {
             Device {
                 name: "Kitchen Sink".to_owned(),
                 kind: DeviceKind::Sink(SinkState::default()),
+            },
+        );
+        devices.insert(
+            "door 1".to_owned(),
+            Device {
+                name: "Bedroom Door".to_owned(),
+                kind: DeviceKind::Door(DoorState::default()),
             },
         );
 

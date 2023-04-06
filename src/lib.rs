@@ -1,5 +1,6 @@
-use std::fmt::Display;
+use std::fmt::{self, Display};
 
+use serde::{Deserialize, Serialize};
 use tarpc::client::RpcError;
 use tarpc::tokio_serde::formats::Bincode;
 
@@ -29,6 +30,8 @@ impl Display for Hazard {
 
 /// Lower level rpc
 pub mod service {
+    use crate::DoorLockStatus;
+
     use super::Hazard;
 
     #[derive(Debug, thiserror::Error, serde::Serialize, serde::Deserialize)]
@@ -96,10 +99,41 @@ pub mod service {
         async fn open_sink_drain(id: String) -> Result<bool, Error>;
         /// Get the water level in the sink.
         async fn get_sink_level(id: String) -> Result<u8, Error>;
+
+        // Door-specific API
+        async fn find_doors() -> Result<Vec<String>, Error>;
+        /// Get the lock status of a door.
+        async fn get_door_lock_status(id: String) -> Result<DoorLockStatus, Error>;
+        /// Get the open status of a door.
+        async fn get_door_open(id: String) -> Result<bool, Error>;
+        /// Lock a door.
+        async fn lock_door(id: String) -> Result<bool, Error>;
+        /// Unlock a door.
+        async fn unlock_door(id: String) -> Result<bool, Error>;
     }
 }
 
 use service::SifisApiClient;
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum DoorLockStatus {
+    #[default]
+    Unlocked,
+    Locked,
+    Jammed,
+}
+
+impl Display for DoorLockStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            Self::Unlocked => "unlocked",
+            Self::Locked => "locked",
+            Self::Jammed => "jammed",
+        };
+        f.write_str(s)
+    }
+}
 
 /// Error type
 #[derive(Debug, thiserror::Error)]
@@ -201,6 +235,44 @@ impl Sifis {
                 sinks
                     .into_iter()
                     .map(|id| Sink {
+                        client: &self.client,
+                        id,
+                    })
+                    .collect()
+            })?;
+        Ok(r)
+    }
+
+    /// Lookup for a Door with the specific id.
+    pub async fn door(&self, door_id: &str) -> Result<Door> {
+        self.client
+            .find_doors(tarpc::context::current())
+            .await?
+            .map(|doors| {
+                doors.into_iter().find_map(|id| {
+                    if door_id == id {
+                        Some(Door {
+                            client: &self.client,
+                            id,
+                        })
+                    } else {
+                        None
+                    }
+                })
+            })?
+            .ok_or_else(|| Error::NotFound)
+    }
+
+    /// Provide a list of the currently available Doors.
+    pub async fn doors(&self) -> Result<Vec<Door>> {
+        let r = self
+            .client
+            .find_doors(tarpc::context::current())
+            .await?
+            .map(|doors| {
+                doors
+                    .into_iter()
+                    .map(|id| Door {
                         client: &self.client,
                         id,
                     })
@@ -355,6 +427,60 @@ impl<'a> Sink<'a> {
         let r = self
             .client
             .get_sink_temp(tarpc::context::current(), self.id.clone())
+            .await??;
+        Ok(r)
+    }
+}
+
+/// Connected door
+pub struct Door<'a> {
+    client: &'a SifisApiClient,
+    pub id: String,
+}
+
+impl Display for Door<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Door - {}", self.id)
+    }
+}
+
+impl<'a> Door<'a> {
+    /// Get the current open status.
+    pub async fn is_open(&self) -> Result<bool> {
+        let r = self
+            .client
+            .get_door_open(tarpc::context::current(), self.id.clone())
+            .await??;
+        Ok(r)
+    }
+
+    /// Get the current lock status.
+    pub async fn lock_status(&self) -> Result<DoorLockStatus> {
+        let r = self
+            .client
+            .get_door_lock_status(tarpc::context::current(), self.id.clone())
+            .await??;
+        Ok(r)
+    }
+
+    /// Try to lock the door.
+    ///
+    /// Returns false if the lock is jammed, true otherwise.
+    pub async fn lock(&self) -> Result<bool> {
+        let r = self
+            .client
+            .lock_door(tarpc::context::current(), self.id.clone())
+            .await??;
+        Ok(r)
+    }
+
+    /// Try to unlock the door.
+    ///
+    /// Returns false if the lock is jammed, true otherwise.
+    pub async fn unlock(&self) -> Result<bool> {
+        let r = self
+            .client
+            .unlock_door(tarpc::context::current(), self.id.clone())
             .await??;
         Ok(r)
     }

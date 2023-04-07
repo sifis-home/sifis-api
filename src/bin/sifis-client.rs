@@ -162,6 +162,47 @@ async fn unlock_door(args: ArgMatches, context: &mut Ctx) -> Result<Option<Strin
     Ok(None)
 }
 
+async fn list_fridges(_args: ArgMatches, context: &mut Ctx) -> Result<Option<String>> {
+    let mut out = String::new();
+
+    writeln!(
+        out,
+        "{:<15} {:<5} {:<11} {:<12}",
+        "Fridge id", "Open?", "Temperature", "Target Temp."
+    )
+    .unwrap();
+    for fridge in context.sifis.fridges().await? {
+        let is_open = fridge.is_open().await?;
+        let temperature = fridge.temperature().await?;
+        let target_temperature = fridge.target_temperature().await?;
+        writeln!(
+            out,
+            "{:<15} {is_open:<5} {temperature:<11} {target_temperature:<12}",
+            fridge.id
+        )
+        .unwrap();
+    }
+
+    Ok(Some(out))
+}
+
+async fn set_fridge_target_temperature(
+    args: ArgMatches,
+    context: &mut Ctx,
+) -> Result<Option<String>> {
+    let id = args.get_one::<String>("id").unwrap();
+    let temperature = args.get_one::<i8>("temperature").unwrap();
+
+    context
+        .sifis
+        .fridge(id)
+        .await?
+        .set_target_temperature(*temperature)
+        .await?;
+
+    Ok(None)
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let mut repl = Repl::new(Ctx {
@@ -249,6 +290,21 @@ async fn main() -> Result<()> {
             .arg(Arg::new("id").required(true))
             .about("Unlock the door"),
         |args, context| Box::pin(unlock_door(args, context)),
+    )
+    .with_command_async(
+        Command::new("list_fridges").about("List the available fridges"),
+        |args, context| Box::pin(list_fridges(args, context)),
+    )
+    .with_command_async(
+        Command::new("set_fridge_target_temperature")
+            .arg(Arg::new("id").required(true))
+            .arg(
+                Arg::new("temperature")
+                    .value_parser(value_parser!(i8).range(-20..=20))
+                    .required(true),
+            )
+            .about("Set the fridge target temperature"),
+        |args, context| Box::pin(set_fridge_target_temperature(args, context)),
     )
     .with_stop_on_ctrl_c(true)
     .with_on_after_command_async(|context| Box::pin(update_prompt(context)));

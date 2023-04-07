@@ -407,6 +407,13 @@ async fn load_conf() -> SifisConf {
                 kind: DeviceKind::Door(DoorState::default()),
             },
         );
+        devices.insert(
+            "fridge 1".to_owned(),
+            Device {
+                name: "Kitchen Fridge".to_owned(),
+                kind: DeviceKind::Fridge(FridgeState::default()),
+            },
+        );
 
         SifisConf { devices }
     }

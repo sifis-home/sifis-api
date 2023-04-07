@@ -47,10 +47,28 @@ struct DoorState {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+struct FridgeState {
+    open: bool,
+    temperature: i8,
+    target_temperature: i8,
+}
+
+impl Default for FridgeState {
+    fn default() -> Self {
+        Self {
+            open: false,
+            temperature: 5,
+            target_temperature: 4,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 enum DeviceKind {
     Lamp(LampState),
     Sink(SinkState),
     Door(DoorState),
+    Fridge(FridgeState),
 }
 
 impl DeviceKind {
@@ -59,6 +77,7 @@ impl DeviceKind {
             DeviceKind::Lamp(_) => "Lamp",
             DeviceKind::Sink(_) => "Sink",
             DeviceKind::Door(_) => "Door",
+            DeviceKind::Fridge(_) => "Fridge",
         }
     }
 }
@@ -127,6 +146,19 @@ impl SifisMock {
             _ => Err(Error::Mismatch {
                 found: d.kind.display().to_string(),
                 req: "Door".to_string(),
+            }),
+        })
+        .await
+    }
+    async fn apply_fridge<F, R>(&self, id: &str, f: F) -> Result<R, Error>
+    where
+        F: FnOnce(&mut FridgeState) -> Result<R, Error>,
+    {
+        self.apply(id, |d| match d.kind {
+            DeviceKind::Fridge(ref mut fridge) => f(fridge),
+            _ => Err(Error::Mismatch {
+                found: d.kind.display().to_string(),
+                req: "Fridge".to_string(),
             }),
         })
         .await
@@ -295,6 +327,49 @@ impl SifisApi for SifisMock {
             })
         })
         .await
+    }
+
+    async fn find_fridges(self, _: Context) -> Result<Vec<String>, Error> {
+        let res = self
+            .devices
+            .lock()
+            .await
+            .iter()
+            .filter_map(|(id, dev)| match dev.kind {
+                DeviceKind::Fridge { .. } => Some(id.clone()),
+                _ => None,
+            })
+            .collect();
+
+        Ok(res)
+    }
+
+    async fn get_fridge_temperature(self, _: Context, id: String) -> Result<i8, Error> {
+        self.apply_fridge(&id, |s: &mut FridgeState| Ok(s.temperature))
+            .await
+    }
+
+    async fn get_fridge_target_temperature(self, _: Context, id: String) -> Result<i8, Error> {
+        self.apply_fridge(&id, |s: &mut FridgeState| Ok(s.target_temperature))
+            .await
+    }
+
+    async fn set_fridge_target_temperature(
+        self,
+        _: Context,
+        id: String,
+        target_temperature: i8,
+    ) -> Result<i8, Error> {
+        self.apply_fridge(&id, |s: &mut FridgeState| {
+            s.target_temperature = target_temperature;
+            Ok(target_temperature)
+        })
+        .await
+    }
+
+    async fn get_fridge_open(self, _: Context, id: String) -> Result<bool, Error> {
+        self.apply_fridge(&id, |s: &mut FridgeState| Ok(s.open))
+            .await
     }
 }
 

@@ -110,6 +110,20 @@ pub mod service {
         async fn lock_door(id: String) -> Result<bool, Error>;
         /// Unlock a door.
         async fn unlock_door(id: String) -> Result<bool, Error>;
+
+        // Fridge-specific API
+        async fn find_fridges() -> Result<Vec<String>, Error>;
+        /// Get the current temperature of the fridge.
+        async fn get_fridge_temperature(id: String) -> Result<i8, Error>;
+        /// Get the target temperature of the fridge.
+        async fn get_fridge_target_temperature(id: String) -> Result<i8, Error>;
+        /// Set the target temperature of the fridge.
+        async fn set_fridge_target_temperature(
+            id: String,
+            target_temperature: i8,
+        ) -> Result<i8, Error>;
+        /// Get the open status of the fridge.
+        async fn get_fridge_open(id: String) -> Result<bool, Error>;
     }
 }
 
@@ -273,6 +287,44 @@ impl Sifis {
                 doors
                     .into_iter()
                     .map(|id| Door {
+                        client: &self.client,
+                        id,
+                    })
+                    .collect()
+            })?;
+        Ok(r)
+    }
+
+    /// Lookup for a Fridge with the specific id.
+    pub async fn fridge(&self, fridge_id: &str) -> Result<Fridge> {
+        self.client
+            .find_fridges(tarpc::context::current())
+            .await?
+            .map(|fridges| {
+                fridges.into_iter().find_map(|id| {
+                    if fridge_id == id {
+                        Some(Fridge {
+                            client: &self.client,
+                            id,
+                        })
+                    } else {
+                        None
+                    }
+                })
+            })?
+            .ok_or_else(|| Error::NotFound)
+    }
+
+    /// Provide a list of the currently available Fridges.
+    pub async fn fridges(&self) -> Result<Vec<Fridge>> {
+        let r = self
+            .client
+            .find_fridges(tarpc::context::current())
+            .await?
+            .map(|fridges| {
+                fridges
+                    .into_iter()
+                    .map(|id| Fridge {
                         client: &self.client,
                         id,
                     })
@@ -483,5 +535,59 @@ impl<'a> Door<'a> {
             .unlock_door(tarpc::context::current(), self.id.clone())
             .await??;
         Ok(r)
+    }
+}
+
+impl<'a> Fridge<'a> {
+    /// Get the current open status.
+    pub async fn is_open(&self) -> Result<bool> {
+        let r = self
+            .client
+            .get_fridge_open(tarpc::context::current(), self.id.clone())
+            .await??;
+        Ok(r)
+    }
+
+    /// Get the current temperature.
+    pub async fn temperature(&self) -> Result<i8> {
+        let r = self
+            .client
+            .get_fridge_temperature(tarpc::context::current(), self.id.clone())
+            .await??;
+        Ok(r)
+    }
+
+    /// Get the target temperature.
+    pub async fn target_temperature(&self) -> Result<i8> {
+        let r = self
+            .client
+            .get_fridge_target_temperature(tarpc::context::current(), self.id.clone())
+            .await??;
+        Ok(r)
+    }
+
+    /// Set the target temperature.
+    pub async fn set_target_temperature(&self, target_temperature: i8) -> Result<i8> {
+        let r = self
+            .client
+            .set_fridge_target_temperature(
+                tarpc::context::current(),
+                self.id.clone(),
+                target_temperature,
+            )
+            .await??;
+        Ok(r)
+    }
+}
+
+/// Connected fridge
+pub struct Fridge<'a> {
+    client: &'a SifisApiClient,
+    pub id: String,
+}
+
+impl Display for Fridge<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Fridge - {}", self.id)
     }
 }

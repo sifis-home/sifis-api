@@ -5,6 +5,7 @@
 use futures::{future, prelude::*};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::path::Path;
 use std::sync::Arc;
 use tarpc::context::Context;
 use tarpc::server::{self, Channel};
@@ -341,6 +342,10 @@ async fn load_conf() -> SifisConf {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
     let path = std::env::var("SIFIS_SERVER").unwrap_or("/var/run/sifis.sock".to_string());
+    if Path::new(&path).exists() {
+        std::fs::remove_file(&path)
+            .unwrap_or_else(|err| panic!("unable to remove old unix socket file: {err}"));
+    }
     let listener = tarpc::serde_transport::unix::listen(path, Bincode::default).await?;
 
     let conf = load_conf().await;

@@ -10,8 +10,10 @@
 
 ## Supported Devices
 
-- [ ] Lamp
-- [ ] Sink
+- [x] Lamp
+- [x] Sink
+- [x] Door
+- [x] Fridge
 
 ## Acknowledgements
 

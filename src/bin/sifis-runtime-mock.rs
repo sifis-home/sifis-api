@@ -12,6 +12,7 @@ use tarpc::server::{self, Channel};
 use tarpc::tokio_serde::formats::Bincode;
 use tokio::fs::read_to_string;
 use tokio::sync::Mutex;
+use tracing::info;
 
 use sifis_api::{service::*, DoorLockStatus};
 
@@ -438,6 +439,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map(server::BaseChannel::with_defaults)
         //        .max_channels_per_key(1, |t| t.transport().unwrap().peer_addr().as_pathname().unwrap())
         .map(|channel| {
+            let peer = channel.transport().get_ref();
+
+            info!("New client {peer:?}");
             let server = SifisMock {
                 devices: devices.clone(),
             };

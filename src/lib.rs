@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 use tarpc::client::RpcError;
 use tarpc::tokio_serde::formats::Bincode;
 
+pub mod runtime;
+
 // TODO: Use sifis-hazards
 /// Hazard descriptions
 #[derive(Debug, serde::Serialize, serde::Deserialize)]

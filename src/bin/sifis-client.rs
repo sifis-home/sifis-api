@@ -10,6 +10,8 @@ enum CliError {
     Sifis(#[from] sifis_api::Error),
     #[error(transparent)]
     Repl(#[from] reedline_repl_rs::Error),
+    #[error("Quit requested")]
+    Quit,
 }
 
 type Result<T> = std::result::Result<T, CliError>;
@@ -306,9 +308,33 @@ async fn main() -> Result<()> {
             .about("Set the fridge target temperature"),
         |args, context| Box::pin(set_fridge_target_temperature(args, context)),
     )
+    .with_command(
+        Command::new("quit").about("Quit the repl"),
+        |_, _context| Err(CliError::Quit),
+    )
     .with_stop_on_ctrl_c(true)
-    .with_on_after_command_async(|context| Box::pin(update_prompt(context)));
-    repl.run_async().await?;
+    .with_on_after_command_async(|context| Box::pin(update_prompt(context)))
+    .with_error_handler(|e, _context| {
+        if matches!(e, CliError::Quit) {
+            Err(reedline_repl_rs::Error::UnknownCommand("quit".to_string()))
+        } else {
+            eprintln!("{}", e);
+            Ok(())
+        }
+    });
+
+    use reedline_repl_rs::Error;
+    match repl.run_async().await {
+        Ok(_) => Ok(()),
+        Err(Error::UnknownCommand(e)) => {
+            if e == "quit" {
+                Ok(())
+            } else {
+                Err(Error::UnknownCommand(e))
+            }
+        }
+        Err(e) => Err(e),
+    }?;
 
     Ok(())
 }

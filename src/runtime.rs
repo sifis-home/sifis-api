@@ -1,5 +1,8 @@
+//! Runtime utilities
+
 use std::os::{fd::RawFd, raw::c_int};
 
+/// Find the pid of the unix socket peer
 pub fn peer_pid(fd: RawFd) -> c_int {
     #[cfg(any(target_os = "android", target_os = "linux"))]
     {

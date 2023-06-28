@@ -13,14 +13,14 @@ use std::{io::Write, os::unix::io::AsRawFd};
 fn peer_pid() {
     let path = Path::new(concat!(env!("CARGO_TARGET_TMPDIR"), "/test.socket"));
     if path.exists() {
-        std::fs::remove_file(&path).unwrap();
+        std::fs::remove_file(path).unwrap();
     }
-    let u = UnixListener::bind(&path).unwrap();
+    let u = UnixListener::bind(path).unwrap();
 
     match unsafe { fork().unwrap() } {
         ForkResult::Child => {
             eprintln!("Child connecting");
-            let mut ux = UnixStream::connect(&path).unwrap();
+            let mut ux = UnixStream::connect(path).unwrap();
             let mut s = String::new();
 
             eprintln!("Child connected");

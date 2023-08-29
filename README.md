@@ -15,6 +15,10 @@
 - [x] Door
 - [x] Fridge
 
+## Usage
+
+The library crate by default opens a unix socket on `/var/run/sifis.sock` or to the path set in the env var `SIFIS_SERVER`.
+
 ## Acknowledgements
 
 This software has been developed in the scope of the H2020 project SIFIS-Home with GA n. 952652.

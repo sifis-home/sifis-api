@@ -593,3 +593,24 @@ impl Display for Fridge<'_> {
         write!(f, "Fridge - {}", self.id)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use tarpc::tokio_serde::formats::Bincode;
+
+    #[tokio::test]
+    async fn fridge() -> anyhow::Result<()> {
+        let sock = tarpc::serde_transport::unix::TempPathBuf::with_random("fridge");
+        let transport = tarpc::serde_transport::unix::listen(&sock, Bincode::default).await?;
+
+        tokio::spawn(
+            transport
+                .take(1)
+                .filter_map(|r| async { r.ok() })
+                .map(BaseChannel::with_defaults)
+                .execute(Server.serve()),
+        );
+
+        Ok(())
+    }
+}

@@ -4,7 +4,9 @@
 
 use futures::{future, prelude::*};
 use serde::{Deserialize, Serialize};
+use sifis_api::runtime::peer_pid;
 use std::collections::HashMap;
+use std::os::fd::AsRawFd;
 use std::path::Path;
 use std::sync::Arc;
 use tarpc::context::Context;
@@ -441,7 +443,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map(|channel| {
             let peer = channel.transport().get_ref();
 
-            info!("New client {peer:?}");
+            let fd = peer.as_raw_fd();
+
+            let pid = peer_pid(fd);
+
+            info!("New client, pid {pid}");
             let server = SifisMock {
                 devices: devices.clone(),
             };

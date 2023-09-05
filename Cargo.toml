@@ -29,3 +29,6 @@ libc = "0.2.144"
 [[bin]]
 name = "sifis-runtime-mock"
 required-features = ["runtime"]
+
+[dev-dependencies]
+anyhow = "1.0.75"

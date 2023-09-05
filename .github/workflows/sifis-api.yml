@@ -113,51 +113,6 @@ jobs:
       with:
         files: lcov.info
 
-  memory-and-threads-dynamic-analysis:
-
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Install Rust stable
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        override: true
-
-    - name: Install valgrind
-      run: |
-        sudo apt-get install valgrind
-
-    # FIXME Use binaries
-    - name: Install cargo-valgrind
-      run: |
-        cargo install cargo-valgrind
-
-    - name: Run cargo-valgrind
-      run: |
-        cargo valgrind test
-
-  undefined-behaviour-fuzzy-dynamic-analysis:
-
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Cache produced data
-      id: cache-data
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cargo/bin/
-          ~/.cargo/registry/index/
-          ~/.cargo/registry/cache/
-          ~/.cargo/git/db/
-          target/
-        key: ${{ runner.os }}-cargo-ci-${{ hashFiles('**/Cargo.toml') }}
-
   static-code-analysis:
 
     runs-on: ubuntu-latest

@@ -19,6 +19,23 @@
 
 The library crate by default opens a unix socket on `/var/run/sifis.sock` or to the path set in the env var `SIFIS_SERVER`.
 
+## Testing
+
+The crate provides two developer tools:
+- `sifis-runtime-mock`: a `runtime` example implementation that simulates devices, useful to implement mock testing of client applications.
+- `sifis-client`: an interactive client to help developing independent runtimes and explore the overall API.
+
+``` sh
+# Change the default unix socket path
+export SIFIS_SERVER=/tmp/sifis.sock
+
+# Start the runtime with the default configuration
+cargo run --bin sifis-runtime-mock &
+
+# Start the interactive client
+cargo run --bin sifis-client
+```
+
 ## Acknowledgements
 
 This software has been developed in the scope of the H2020 project SIFIS-Home with GA n. 952652.

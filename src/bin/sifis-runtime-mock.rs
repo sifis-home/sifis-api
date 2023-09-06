@@ -3,6 +3,7 @@
 //! It simulates a number of devices
 
 use futures::{future, prelude::*};
+use libproc::libproc::proc_pid::pidpath;
 use serde::{Deserialize, Serialize};
 use sifis_api::runtime::peer_pid;
 use std::collections::HashMap;
@@ -447,7 +448,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let pid = peer_pid(fd);
 
-            info!("New client, pid {pid}");
+            let path = pidpath(pid).unwrap_or_else(|e| format!("Cannot find the executable: {e}"));
+
+            info!("New client, pid {pid} {path}");
             let server = SifisMock {
                 devices: devices.clone(),
             };

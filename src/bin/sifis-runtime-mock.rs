@@ -399,21 +399,21 @@ async fn load_conf() -> SifisConf {
             },
         );
         devices.insert(
-            "sink 1".to_owned(),
+            "sink1".to_owned(),
             Device {
                 name: "Kitchen Sink".to_owned(),
                 kind: DeviceKind::Sink(SinkState::default()),
             },
         );
         devices.insert(
-            "door 1".to_owned(),
+            "door1".to_owned(),
             Device {
                 name: "Bedroom Door".to_owned(),
                 kind: DeviceKind::Door(DoorState::default()),
             },
         );
         devices.insert(
-            "fridge 1".to_owned(),
+            "fridge1".to_owned(),
             Device {
                 name: "Kitchen Fridge".to_owned(),
                 kind: DeviceKind::Fridge(FridgeState::default()),

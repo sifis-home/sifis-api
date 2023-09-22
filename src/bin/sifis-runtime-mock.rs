@@ -424,6 +424,17 @@ async fn load_conf() -> SifisConf {
     }
 }
 
+#[cfg(unix)]
+async fn exit_request() {
+    use tokio::signal::unix::*;
+
+    signal(SignalKind::terminate()).unwrap().recv().await;
+}
+#[cfg(not(unix))]
+async fn exit_request() {
+    tokio::signal::ctrl_c().await;
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
@@ -437,7 +448,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let conf = load_conf().await;
     let devices = Arc::new(Mutex::new(conf.devices));
 
-    listener
+    let listen = listener
         .filter_map(|r| future::ready(r.ok()))
         .map(server::BaseChannel::with_defaults)
         //        .max_channels_per_key(1, |t| t.transport().unwrap().peer_addr().as_pathname().unwrap())
@@ -458,8 +469,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
         // Max concurrent calls
         .buffer_unordered(10)
-        .for_each(|_| async {})
-        .await;
+        .for_each(|_| async {});
+
+    tokio::select! {
+        _ = listen => {
+            info!("Server Error");
+        }
+        _ = exit_request() => {
+            info!("Terminating");
+            return Ok(());
+        }
+        _ = tokio::signal::ctrl_c() => {
+            info!("Exiting");
+            return Ok(());
+        }
+    }
 
     Ok(())
 }

@@ -9,7 +9,7 @@ keywords = ["SIFIS-Home"]
 
 [features]
 default = ["runtime", "client"]
-runtime = ["dep:tracing-subscriber", "tokio/rt-multi-thread", "tokio/fs"]
+runtime = ["dep:tracing-subscriber", "tokio/rt-multi-thread", "tokio/fs", "tokio/signal"]
 client = ["dep:reedline-repl-rs"]
 
 [dependencies]

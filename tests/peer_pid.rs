@@ -7,7 +7,7 @@ use std::{
     os::unix::net::{UnixListener, UnixStream},
     path::Path,
 };
-use std::{io::Write, os::unix::io::AsRawFd};
+use std::{io::Write, os::unix::io::AsFd};
 
 #[test]
 fn peer_pid() {
@@ -33,7 +33,7 @@ fn peer_pid() {
             eprintln!("Waiting for client");
             let mut s = u.incoming().next().unwrap().unwrap();
 
-            let fd = s.as_raw_fd();
+            let fd = s.as_fd();
 
             eprintln!("Connected");
 

@@ -92,6 +92,8 @@ jobs:
           -Coverflow-checks=off
       run: |
         cargo test --verbose
+        # workaround the lack of a teardown function in the default test runner
+        killall sifis-runtime-mock
 
     - name: Get coverage data
       run: |
@@ -174,6 +176,8 @@ jobs:
         LLVM_PROFILE_FILE: "wot-td-%p-%m.profraw"
       run: |
         cargo test --verbose
+        # workaround the lack of a teardown function in the default test runner
+        killall sifis-runtime-mock
 
     - name: Run grcov
       run: |

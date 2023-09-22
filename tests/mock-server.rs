@@ -47,7 +47,11 @@ async fn lamp() -> Result<()> {
 
     let lamps = sifis.lamps().await?;
 
+    let first = &lamps[0].id;
+    assert_eq!(first, &sifis.lamp(first).await?.id);
+
     for lamp in lamps {
+        println!("{}", lamp);
         let on = lamp.get_on_off().await?;
         let brightness = lamp.get_brightness().await?;
 
@@ -68,8 +72,11 @@ async fn sink() -> Result<()> {
     let sifis = Mock::spawn().await?;
 
     let sinks = sifis.sinks().await?;
+    let first = &sinks[0].id;
+    assert_eq!(first, &sifis.sink(first).await?.id);
 
     for sink in sinks {
+        println!("{}", sink);
         let flow = sink.get_flow().await?;
         let level = sink.get_water_level().await?;
         let temp = sink.get_temperature().await?;
@@ -93,8 +100,11 @@ async fn door() -> Result<()> {
     let sifis = Mock::spawn().await?;
 
     let doors = sifis.doors().await?;
+    let first = &doors[0].id;
+    assert_eq!(first, &sifis.door(first).await?.id);
 
     for door in doors {
+        println!("{}", door);
         let open = door.is_open().await?;
         let lock = door.lock_status().await?;
 
@@ -113,8 +123,11 @@ async fn fridge() -> Result<()> {
     let sifis = Mock::spawn().await?;
 
     let fridges = sifis.fridges().await?;
+    let first = &fridges[0].id;
+    assert_eq!(first, &sifis.fridge(first).await?.id);
 
     for fridge in fridges {
+        println!("{}", fridge);
         let open = fridge.is_open().await?;
         let temp = fridge.temperature().await?;
         let targ = fridge.target_temperature().await?;

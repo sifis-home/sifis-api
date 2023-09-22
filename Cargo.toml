@@ -13,8 +13,8 @@ runtime = ["dep:tracing-subscriber", "tokio/rt-multi-thread", "tokio/fs"]
 client = ["dep:reedline-repl-rs"]
 
 [dependencies]
-tarpc = { version = "0.31.0", features = ["serde-transport", "unix", "serde-transport-bincode"] }
-tokio = { version = "1.0", features = ["macros"] }
+tarpc = { version = "0.33.0", features = ["serde-transport", "unix", "serde-transport-bincode"] }
+tokio = { version = "1.32", features = ["macros"] }
 futures = "0.3"
 thiserror = "1.0.38"
 serde = { version = "1.0.152", features = ["serde_derive"] }
@@ -22,8 +22,8 @@ tracing = "0.1.37"
 # runtime-only
 tracing-subscriber = { version = "0.3.16", optional = true }
 reedline-repl-rs = { version = "1.0.6", features = ["async"], optional = true }
-toml = "0.7.1"
-nix = "0.26.2"
+toml = "0.8"
+nix = { version = "0.27", features = ["process", "socket"] }
 libc = "0.2.144"
 libproc = "0.14.1"
 

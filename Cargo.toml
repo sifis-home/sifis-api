@@ -33,3 +33,6 @@ required-features = ["runtime"]
 
 [dev-dependencies]
 anyhow = "1.0.75"
+assert_cmd = "2.0.12"
+tempfile = "3.8.0"
+tokio = { version = "1.0", features = ["rt-multi-thread"] }

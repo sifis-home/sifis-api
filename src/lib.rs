@@ -1,4 +1,5 @@
 use std::fmt::{self, Display};
+use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use tarpc::client::RpcError;
@@ -172,15 +173,19 @@ pub struct Sifis {
 }
 
 impl Sifis {
+    pub async fn from_path(path: impl AsRef<Path>) -> Result<Sifis> {
+        let transport =
+            tarpc::serde_transport::unix::connect(path.as_ref(), Bincode::default).await?;
+        let client = SifisApiClient::new(Default::default(), transport).spawn();
+
+        Ok(Sifis { client })
+    }
+
     /// Start the sifis client it will connect to the default unix socket
     pub async fn new() -> Result<Sifis> {
         let sifis_server =
             std::env::var("SIFIS_SERVER").unwrap_or("/var/run/sifis.sock".to_string());
-        let transport =
-            tarpc::serde_transport::unix::connect(sifis_server, Bincode::default).await?;
-        let client = SifisApiClient::new(Default::default(), transport).spawn();
-
-        Ok(Sifis { client })
+        Self::from_path(&sifis_server).await
     }
 
     /// Lookup for a Lamp with the specific id.
@@ -591,26 +596,5 @@ pub struct Fridge<'a> {
 impl Display for Fridge<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Fridge - {}", self.id)
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use tarpc::tokio_serde::formats::Bincode;
-
-    #[tokio::test]
-    async fn fridge() -> anyhow::Result<()> {
-        let sock = tarpc::serde_transport::unix::TempPathBuf::with_random("fridge");
-        let transport = tarpc::serde_transport::unix::listen(&sock, Bincode::default).await?;
-
-        tokio::spawn(
-            transport
-                .take(1)
-                .filter_map(|r| async { r.ok() })
-                .map(BaseChannel::with_defaults)
-                .execute(Server.serve()),
-        );
-
-        Ok(())
     }
 }

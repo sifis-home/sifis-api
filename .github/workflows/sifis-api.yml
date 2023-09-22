@@ -98,7 +98,10 @@ jobs:
     - name: Get coverage data
       run: |
         grcov . --binary-path ./target/debug/ -s . -t lcov --branch \
-              --ignore-not-existing --ignore "/*" --ignore "../*" -o lcov.info
+              --ignore-not-existing \
+              --keep-only 'src/*.rs' \
+              --keep-only src/bin/sifis-runtime-mock.rs \
+              -o lcov.info
 
     - name: Codecov upload
       uses: codecov/codecov-action@v3

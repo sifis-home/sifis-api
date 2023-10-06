@@ -382,7 +382,7 @@ async fn load_conf() -> SifisConf {
     if let Ok(conf_s) = read_to_string("sifis-runtime.toml").await {
         toml::from_str(&conf_s).expect("Failed to load configuration")
     } else {
-        tracing::warn!("Cannot find a configuration file, using the default");
+        tracing::info!("Using the default configuration");
         let mut devices = HashMap::new();
         devices.insert(
             "lamp1".to_owned(),
@@ -420,6 +420,7 @@ async fn load_conf() -> SifisConf {
             },
         );
 
+        tracing::debug!("{devices:#?}");
         SifisConf { devices }
     }
 }

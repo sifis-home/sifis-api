@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*.*.*'
+      - 'p*'
 jobs:
   cross-compile:
     runs-on: ubuntu-latest

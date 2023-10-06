@@ -7,6 +7,16 @@
 [![Documentation](https://docs.rs/sifis/badge.svg)](https://docs.rs/sifis/)
 [![codecov](https://codecov.io/gh/sifis-home/sifis-api/graph/badge.svg?token=5R8C9GRT2D)](https://codecov.io/gh/sifis-home/sifis-api)
 
+## Key concepts
+
+![api-diagram](assets/sifis-api-concept.drawio.svg)
+
+The SIFIS-Home developer API present a simplified abstraction that provides the developer with the minimum surface to control devices
+while being aware of the hazards that every API involve.
+
+The applications written using this crate are intended to run by interacting with a `runtime` that mediates the access to the remote
+devices (e.g. via a Web of Things consumer).
+
 **NOTE**: This repo history will be rewritten to be fully descriptive.
 
 ## Supported Devices
